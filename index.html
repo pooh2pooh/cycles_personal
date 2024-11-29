@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cycle Charts</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        .chart-info-btn {
+            font-size: 1.2rem;
+            color: #007bff;
+            cursor: pointer;
+        }
+        .form-check-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .cycle-line {
+            display: inline-block;
+            width: 10px;
+            height: 4px;
+            margin-left: 5px;
+            border-radius: 2px;
+        }
+        .event-tooltip {
+            position: relative;
+            cursor: pointer;
+        }
+        .event-tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <button class="btn btn-light" onclick="prevWeek()">&#x2190;</button>
+        <h4 id="weekRange">25.10.23 — 31.10.23</h4>
+        <button class="btn btn-light" onclick="nextWeek()">&#x2192;</button>
+    </div>
+
+    <div class="row">
+        <div class="col-12 col-md-4 mb-3">
+            <div id="checkboxContainer" class="mb-3">
+                <!-- Генерация чекбоксов -->
+            </div>
+            <div id="cycleDescriptions" class="mb-3"></div>
+            <button class="btn btn-primary mb-3" onclick="openAddModal()">Добавить партнера</button>
+        </div>
+
+        <div class="col-12 col-md-8" id="chartsContainer"></div>
+    </div>
+
+    <div class="modal" id="addModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить партнера</h5>
+                    <button type="button" class="close" onclick="closeAddModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="addForm">
+                        <div class="form-group">
+                            <label for="partnerName">Имя</label>
+                            <input type="text" class="form-control" id="partnerName" placeholder="Партнер 1">
+                        </div>
+                        <div class="form-group">
+                            <label for="birthDate">Дата рождения</label>
+                            <input type="date" class="form-control" id="birthDate" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeAddModal()">Отмена</button>
+                    <button class="btn btn-primary" onclick="addPartner()">Добавить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="infoModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" onclick="closeInfoModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="infoContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
