@@ -1,55 +1,24 @@
 const cycles = {
-    intellectual: {
-        label: 'Интеллектуальный',
-        color: '#007bff',
-        description: '33-дневный биоритм, который определяет творческую способность личности.',
-    },
-    emotional: {
-        label: 'Эмоциональный',
-        color: '#dc3545',
-        description: '28-дневный биоритм, который влияет на настроение и эмоциональное состояние.',
-    },
-    physical: {
-        label: 'Физический',
-        color: '#28a745',
-        description: '23-дневный цикл, отражающий физическое состояние организма.',
-    },
-    blood: {
-        label: 'Цикл крови',
-        color: '#ffc107',
-        description: 'Определяет особенности изменений в состоянии кровеносной системы.',
-    },
-    fate: {
-        label: 'Судьбы и воли',
-        color: '#17a2b8',
-        description: 'Методика на основе знания о 12-летнем цикле судьбы и воли человека.',
-    },
-    jupiter: {
-        label: 'Цикл Юпитера (12 лет)',
-        color: '#6f42c1',
-        description: 'Каждые 12 лет человек начинает новый жизненный этап. Важно учитывать ключевые годы.',
-    },
-    lunarNodes: {
-        label: 'Лунные узлы (19 лет)',
-        color: '#e83e8c',
-        description: 'Основные кармические задачи, происходящие каждые 18-19 лет.',
-    },
-    saturn: {
-        label: 'Цикл Сатурна (29,5 лет)',
-        color: '#343a40',
-        description: 'Цикл зрелости, кризиса и нового этапа жизни, повторяется раз в 29,5 лет.',
-    },
-    sunMacro: {
-        label: 'Макроцикл Солнца (11 лет)',
-        color: '#fd7e14',
-        description: 'Обозначает важные 11-летние социальные и карьерные периоды.',
-    },
+    intellectual: { label: 'Интеллектуальный', color: '#007bff', description: '33-дневный биоритм.' },
+    emotional: { label: 'Эмоциональный', color: '#dc3545', description: '28-дневный биоритм.' },
+    physical: { label: 'Физический', color: '#28a745', description: '23-дневный биоритм.' },
+    blood: { label: 'Кровь', color: '#ffc107', description: 'Цикл крови.' },
+    fate: { label: 'Судьбы и воли', color: '#17a2b8', description: 'Цикл судьбы.' },
+    jupiter: { label: 'Юпитер', color: '#6f42c1', description: 'Цикл Юпитера.' },
+    hormones: { label: 'Гормоны', color: '#e83e8c', description: 'Цикл гормонов (только для женщин).' },
 };
 
 let startDate = new Date();
-let partnerCount = 1;
 let charts = {};
+let previousCycle = null;
 
+const FATE_PERIOD_YEARS = 12;
+const DAYS_IN_YEAR = 365.25;
+const DAYS_IN_WEEK = 7;
+
+const SATURN_PERIOD_YEARS = 29.5; // Цикл Сатурна
+
+// События при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     generateCheckboxes();
     updateWeekRange();
@@ -57,15 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function generateCheckboxes() {
     const container = document.getElementById('checkboxContainer');
-    for (const [id, cycle] of Object.entries(cycles)) {
+    Object.entries(cycles).forEach(([id, cycle]) => {
         container.innerHTML += `
-            <div class="form-check">
+            <div class="form-check cycle-checkbox">
                 <input type="checkbox" class="form-check-input" id="${id}" onchange="toggleCycle(this)">
                 <label class="form-check-label" for="${id}">
                     ${cycle.label} <span class="cycle-line" style="background-color: ${cycle.color};"></span>
                 </label>
             </div>`;
-    }
+    });
 }
 
 function formatDate(date) {
@@ -74,118 +43,19 @@ function formatDate(date) {
 
 function updateWeekRange() {
     const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 7);
+    endDate.setDate(startDate.getDate() + 6);
     document.getElementById('weekRange').innerText = `${formatDate(startDate)} — ${formatDate(endDate)}`;
 }
 
 function prevWeek() {
     startDate.setDate(startDate.getDate() - 7);
-    updateWeekRange(); // Обновляем диапазон дат
-    updateCharts(); // Обновляем графики для новой недели
+    updateWeekRange();
+    updateCharts();
 }
 
 function nextWeek() {
     startDate.setDate(startDate.getDate() + 7);
-    updateWeekRange(); // Обновляем диапазон дат
-    updateCharts(); // Обновляем графики для новой недели
-}
-
-// Обновление графика
-function updateCharts() {
-    const selectedCycles = Object.keys(cycles).filter(id => document.getElementById(id)?.checked);
-
-    // Для каждого графика партнера обновляем данные
-    Object.entries(charts).forEach(([chartId, { chart, birthDate }]) => {
-        const series = selectedCycles.flatMap(cycleId => {
-            const data = generateCycleData(cycleId, 7, birthDate, startDate); // Передаем startDate для корректного расчета
-
-            if (cycleId === 'fate') {
-                return [
-                    { name: 'Судьба', data: data.fate, color: '#17a2b8' },
-                    { name: 'Воля', data: data.will, color: '#6f42c1' },
-                ];
-            } else {
-                return {
-                    name: cycles[cycleId].label,
-                    data: data, // Данные только на 7 дней
-                    color: cycles[cycleId].color,
-                };
-            }
-        });
-
-        if (chart) {
-            chart.updateOptions({
-                series,
-                xaxis: {
-                    categories: Array.from({ length: 7 }, (_, i) => `День ${i + 1}`), // Ось X с днями
-                    tickAmount: 6, // Равномерное распределение меток
-                    labels: {
-                        show: true,
-                        rotate: 0,
-                        style: { fontSize: '12px' },
-                    },
-                },
-            });
-        } else {
-            console.error(`Chart with id ${chartId} not found`);
-        }
-    });
-}
-
-// Функция генерации данных для цикла с учетом startDate
-function generateCycleData(cycleId, days, birthDate, startDate) {
-    const periods = {
-        intellectual: 33,
-        emotional: 28,
-        physical: 23,
-        blood: 37,
-        fate: 12 * 365, // 12 лет
-        jupiter: 12 * 365, // 12 лет
-        lunarNodes: 19 * 365, // 19 лет
-        saturn: 29.5 * 365, // 29.5 лет
-        sunMacro: 11 * 365, // 11 лет
-    };
-
-    const period = periods[cycleId];
-    if (!period) return []; // Если период не найден
-
-    const daysSinceBirth = Math.floor((startDate - birthDate) / (1000 * 60 * 60 * 24)); // Дни с даты рождения относительно startDate
-
-    // Для цикла Судьбы и Воли генерируем две линии
-    if (cycleId === 'fate') {
-        return {
-            fate: Array.from({ length: days }, (_, day) => {
-                const x = day;
-                const y = Math.sin((2 * Math.PI * (daysSinceBirth + day)) / (12 * 365)) * 100;
-                return { x, y: y.toFixed(2) };
-            }),
-            will: Array.from({ length: days }, (_, day) => {
-                const x = day;
-                const y = Math.cos((2 * Math.PI * (daysSinceBirth + day)) / (12 * 365)) * 100;
-                return { x, y: y.toFixed(2) };
-            }),
-        };
-    }
-
-    // Для остальных циклов одна линия
-    return Array.from({ length: days }, (_, day) => {
-        const x = day;
-        const y = Math.sin((2 * Math.PI * (daysSinceBirth + day)) / period) * 100;
-        return { x, y: y.toFixed(2) };
-    });
-}
-
-function toggleCycle(checkbox) {
-    const descContainer = document.getElementById('cycleDescriptions');
-    const cycleId = checkbox.id;
-    const descId = `desc-${cycleId}`;
-
-    if (checkbox.checked) {
-        descContainer.innerHTML += `<p id="${descId}"><b>${cycles[cycleId].label}</b>: ${cycles[cycleId].description}</p>`;
-    } else {
-        const desc = document.getElementById(descId);
-        if (desc) desc.remove();
-    }
+    updateWeekRange();
     updateCharts();
 }
 
@@ -198,44 +68,147 @@ function closeAddModal() {
 }
 
 function addPartner() {
-    const name = document.getElementById('partnerName').value || `Партнер ${partnerCount++}`;
-    const birthDate = new Date(document.getElementById('birthDate').value);
-    const sanitizedName = name.replace(/\s+/g, '-');
+    const name = document.getElementById('partnerName').value || `Партнёр ${Object.keys(charts).length + 1}`;
+    const birthDate = document.getElementById('birthDate').value;
+    const gender = document.querySelector('input[name="gender"]:checked').value;
+    const chartId = `chart-${name.replace(/\s/g, '-')}`;
     const chartsContainer = document.getElementById('chartsContainer');
 
-    // Создаем контейнер для графика
     const chartContainer = document.createElement('div');
-    chartContainer.id = sanitizedName;
-    chartContainer.style.height = '200px';
+    chartContainer.id = chartId;
+    chartContainer.style.height = '250px';
+    chartContainer.classList.add('chart-container');
+
+    const title = document.createElement('h5');
+    title.textContent = name;
+
+    const detailsButton = document.createElement('button');
+    detailsButton.className = 'btn btn-sm btn-info ml-2';
+    detailsButton.textContent = 'Подробнее';
+    detailsButton.onclick = () => openMacroCycleModal(name, birthDate);
+
+    const header = document.createElement('div');
+    header.className = 'd-flex align-items-center mb-2';
+    header.appendChild(title);
+    header.appendChild(detailsButton);
+
+    chartsContainer.appendChild(header);
     chartsContainer.appendChild(chartContainer);
 
-    // Проверяем, что контейнер успешно добавлен
-    if (!document.getElementById(sanitizedName)) {
-        console.error('Контейнер для графика не создан!');
-        return;
-    }
-
-    // Инициализируем график
     const chart = new ApexCharts(chartContainer, {
         chart: { type: 'line', animations: { enabled: true } },
-        xaxis: {
-            categories: Array.from({ length: 7 }, (_, i) => `День ${i + 1}`), // Метки для 7 дней
-            tickAmount: 6, // Равномерное распределение меток
-            labels: {
-                show: true,
-                rotate: 0, // Отключаем вращение меток
-                style: {
-                    fontSize: '12px',
-                },
-            },
-        },
-        series: []
+        xaxis: { categories: Array.from({ length: 7 }, (_, i) => `День ${i + 1}`) },
+        yaxis: { min: -1, max: 1, decimalsInFloat: 2 },
+        series: [],
     });
+    chart.render();
 
-    chart.render().then(() => {
-        charts[sanitizedName] = { chart, birthDate }; // Сохраняем дату рождения партнера
-        updateCharts();
-    }).catch(err => console.error('Ошибка создания графика:', err));
-
+    charts[chartId] = { chart, name, birthDate, gender };
     closeAddModal();
+}
+
+function toggleCycle(checkbox) {
+    if (checkbox.id === 'fate') {
+        if (checkbox.checked) {
+            previousCycle = [...document.querySelectorAll('.cycle-checkbox input:not(#fate):checked')].map(input => input.id);
+            document.querySelectorAll('.cycle-checkbox input:not(#fate)').forEach(input => {
+                input.checked = false;
+                input.disabled = true;
+            });
+        } else {
+            document.querySelectorAll('.cycle-checkbox input:not(#fate)').forEach(input => (input.disabled = false));
+            previousCycle.forEach(id => document.getElementById(id).checked = true);
+        }
+    }
+    updateCharts();
+}
+
+function updateCharts() {
+    const activeCycles = Object.keys(cycles).filter(id => document.getElementById(id).checked);
+    Object.entries(charts).forEach(([chartId, { chart, birthDate }]) => {
+        if (activeCycles.includes('fate')) {
+            const years = Array.from({ length: FATE_PERIOD_YEARS }, (_, i) => `Год ${i + 1}`);
+            const fateSeries = [
+                {
+                    name: 'Судьбы',
+                    data: generateFateData('fate', FATE_PERIOD_YEARS, birthDate),
+                    color: cycles.fate.color
+                },
+                {
+                    name: 'Воли',
+                    data: generateFateData('will', FATE_PERIOD_YEARS, birthDate),
+                    color: '#6c757d'
+                },
+            ];
+            chart.updateOptions({ 
+                xaxis: { categories: years },
+                yaxis: { min: -1, max: 1, decimalsInFloat: 2 }
+            });
+            chart.updateSeries(fateSeries);
+        } else {
+            const series = activeCycles.map(cycleId => ({
+                name: cycles[cycleId].label,
+                data: generateCycleData(cycleId, DAYS_IN_WEEK, birthDate),
+                color: cycles[cycleId].color,
+            }));
+            chart.updateOptions({ 
+                xaxis: { categories: Array.from({ length: 7 }, (_, i) => `День ${i + 1}`) },
+                yaxis: { min: -1, max: 1, decimalsInFloat: 2 }
+            });
+            chart.updateSeries(series);
+        }
+    });
+}
+
+function generateCycleData(cycleId, days, birthDate) {
+    const startDay = new Date(startDate);
+    const cycleLength = { physical: 23, emotional: 28, intellectual: 33, blood: 35, fate: 40, jupiter: 80, hormones: 32 }[cycleId];
+    return Array.from({ length: days }, (_, i) => {
+        const dayOffset = Math.floor((new Date(startDay).getTime() - new Date(birthDate).getTime()) / (1000 * 60 * 60 * 24)) + i;
+        return Math.sin((2 * Math.PI * dayOffset) / cycleLength);
+    });
+}
+
+function generateFateData(type, years, birthDate) {
+    const cycleLength = type === 'fate' ? FATE_PERIOD_YEARS : SATURN_PERIOD_YEARS; // 12 лет для судьбы, 29.5 лет для воли
+    const startDay = new Date(birthDate);
+    return Array.from({ length: years }, (_, i) => {
+        const yearOffset = i * DAYS_IN_YEAR;
+        return Math.sin((2 * Math.PI * (yearOffset + startDay.getTime() / (1000 * 60 * 60 * 24))) / (cycleLength * DAYS_IN_YEAR));
+    });
+}
+
+function openMacroCycleModal(name, birthDate) {
+    const birthDateObj = new Date(birthDate);
+    const macroCycles = [
+        { name: 'Юпитер', period: 12 },
+        { name: 'Сатурн', period: 29.5 },
+        { name: 'Уран', period: 84 },
+        { name: 'Нептун', period: 165 }
+    ];
+
+    const macroModalContent = macroCycles.map(cycle => {
+        const nextOccurrenceYear = birthDateObj.getFullYear() + Math.ceil((new Date().getFullYear() - birthDateObj.getFullYear()) / cycle.period) * cycle.period;
+        const nextOccurrenceDate = new Date(birthDateObj);
+        nextOccurrenceDate.setFullYear(nextOccurrenceYear);
+        return `
+            <li>
+                <strong>${cycle.name}:</strong> цикл длится ${cycle.period} лет. Следующее наступление: ${formatDate(nextOccurrenceDate)}
+            </li>`;
+    }).join('');
+
+    const modalBody = document.getElementById('macroModalBody');
+    modalBody.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5>Макроциклы для: ${name}</h5>
+            </div>
+            <div class="modal-body">        
+                <p><strong>Дата рождения:</strong> ${formatDate(new Date(birthDate))}</p>
+                <ul>${macroModalContent}</ul>
+            </div>
+        </div>
+    `;
+
+    $('#macroModal').modal('show');
 }
