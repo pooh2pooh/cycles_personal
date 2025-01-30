@@ -17,6 +17,12 @@ const DAYS_IN_WEEK = 7;
 
 const SATURN_PERIOD_YEARS = 29.5; // Цикл Сатурна
 
+// Добавляем константу для периода Судьбы и Воли в днях
+const FATE_PERIOD_DAYS = FATE_PERIOD_YEARS * DAYS_IN_YEAR;  // 12 лет в днях
+const SATURN_PERIOD_DAYS = SATURN_PERIOD_YEARS * DAYS_IN_YEAR;  // 29.5 лет в днях
+
+let startYear = new Date().getFullYear(); // Начальный год, который будем менять
+
 // События при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     generateCheckboxes();
@@ -36,26 +42,55 @@ function generateCheckboxes() {
     });
 }
 
-function formatDate(date) {
-    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
+function formatFullDate(date) {
+    const day = date.getDate().toString().padStart(2, '0');  // Добавляем ведущий ноль к дню
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');  // Добавляем ведущий ноль к месяцу
+    const year = date.getFullYear();  // Год
+    return `${day}.${month}.${year}`;  // Форматируем как ДД.ММ.ГГГГ
 }
 
+function formatDate(date) {
+    const day = date.getDate().toString().padStart(2, '0');  // Добавляем ведущий ноль к дню
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');  // Добавляем ведущий ноль к месяцу
+    return `${day}.${month}`;
+}
+
+// Обновляем диапазон времени
 function updateWeekRange() {
     const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 6);
-    document.getElementById('weekRange').innerText = `${formatDate(startDate)} — ${formatDate(endDate)}`;
+
+    // Если активен график Судьбы или Воли, то диапазон обновляется на 12 лет
+    if (document.getElementById('fate').checked) {
+        // Переключение диапазона для Судьбы и Воли
+        const yearsRange = 12;  // 12 лет для Судьбы и Воли
+        endDate.setFullYear(startDate.getFullYear() + yearsRange);
+    } else {
+        // Для обычных циклов (например, Эмоциональный, Интеллектуальный и т. д.) переключение на 1 месяц
+        endDate.setMonth(startDate.getMonth() + 1);
+    }
+
+    document.getElementById('weekRange').innerText = `${formatFullDate(startDate)} — ${formatFullDate(endDate)}`;
+    updateCharts();  // Обновляем графики при изменении диапазона
 }
 
+// Сдвиг диапазона на предыдущую неделю
 function prevWeek() {
-    startDate.setDate(startDate.getDate() - 7);
-    updateWeekRange();
-    updateCharts();
+    if (document.getElementById('fate').checked) {
+        startDate.setFullYear(startDate.getFullYear() - 12);  // Для Судьбы сдвигаем на 12 лет
+    } else {
+        startDate.setDate(startDate.getDate() - 7);  // Для обычных циклов сдвигаем на 7 дней
+    }
+    updateWeekRange();  // Обновляем диапазон
 }
 
+// Сдвиг диапазона на следующую неделю
 function nextWeek() {
-    startDate.setDate(startDate.getDate() + 7);
-    updateWeekRange();
-    updateCharts();
+    if (document.getElementById('fate').checked) {
+        startDate.setFullYear(startDate.getFullYear() + 12);  // Для Судьбы сдвигаем на 12 лет
+    } else {
+        startDate.setDate(startDate.getDate() + 7);  // Для обычных циклов сдвигаем на 7 дней
+    }
+    updateWeekRange();  // Обновляем диапазон
 }
 
 function openAddModal() {
@@ -125,36 +160,56 @@ function toggleCycle(checkbox) {
 function updateCharts() {
     const activeCycles = Object.keys(cycles).filter(id => document.getElementById(id).checked);
     Object.entries(charts).forEach(([chartId, { chart, birthDate, gender }]) => {
-        // Проверка, чтобы не строить график для 'blood', если пол 'male'
         const filteredCycles = activeCycles.filter(cycleId => !(cycleId === 'blood' && gender === 'male'));
 
         if (activeCycles.includes('fate')) {
-            const years = Array.from({ length: FATE_PERIOD_YEARS }, (_, i) => `Год ${i + 1}`);
-            const fateSeries = [
+            const fateData = generateFateData('fate', startDate, FATE_PERIOD_YEARS, birthDate);
+            const willData = generateFateData('will', startDate, FATE_PERIOD_YEARS, birthDate);
+
+            // Генерируем годы с учётом startDate
+            const years = Array.from({ length: FATE_PERIOD_YEARS }, (_, i) => startDate.getFullYear() + i);
+
+            chart.updateOptions({
+                xaxis: { 
+                    categories: years,
+                    labels: { 
+                        style: {
+                            fontSize: '12px',
+                        },
+                        formatter: (val) => Math.round(val) // Отображаем только целые года
+                    }
+                },
+                yaxis: { min: -1, max: 1, decimalsInFloat: 2 }
+            });
+
+            chart.updateSeries([
                 {
                     name: 'Судьбы',
-                    data: generateFateData('fate', FATE_PERIOD_YEARS, birthDate),
+                    data: fateData.map(data => data.value),
                     color: cycles.fate.color
                 },
                 {
                     name: 'Воли',
-                    data: generateFateData('will', FATE_PERIOD_YEARS, birthDate),
+                    data: willData.map(data => data.value),
                     color: '#6c757d'
                 },
-            ];
-            chart.updateOptions({ 
-                xaxis: { categories: years },
-                yaxis: { min: -1, max: 1, decimalsInFloat: 2 }
-            });
-            chart.updateSeries(fateSeries);
+            ]);
         } else {
+            const daysInMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+            const dates = Array.from({ length: daysInMonth }, (_, i) => {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                return formatDate(currentDate);
+            });
+
             const series = filteredCycles.map(cycleId => ({
                 name: cycles[cycleId].label,
-                data: generateCycleData(cycleId, DAYS_IN_WEEK, birthDate),
+                data: generateCycleData(cycleId, daysInMonth, birthDate),
                 color: cycles[cycleId].color,
             }));
-            chart.updateOptions({ 
-                xaxis: { categories: Array.from({ length: 7 }, (_, i) => `День ${i + 1}`) },
+
+            chart.updateOptions({
+                xaxis: { categories: dates },
                 yaxis: { min: -1, max: 1, decimalsInFloat: 2 }
             });
             chart.updateSeries(series);
@@ -171,12 +226,22 @@ function generateCycleData(cycleId, days, birthDate) {
     });
 }
 
-function generateFateData(type, years, birthDate) {
+// Генерация данных для Судьбы и Воли с динамическим диапазоном времени
+function generateFateData(type, startDate, yearsRange, birthDate) {
     const cycleLength = type === 'fate' ? FATE_PERIOD_YEARS : SATURN_PERIOD_YEARS; // 12 лет для судьбы, 29.5 лет для воли
-    const startDay = new Date(birthDate);
-    return Array.from({ length: years }, (_, i) => {
-        const yearOffset = i * DAYS_IN_YEAR;
-        return Math.sin((2 * Math.PI * (yearOffset + startDay.getTime() / (1000 * 60 * 60 * 24))) / (cycleLength * DAYS_IN_YEAR));
+    const birthDateObj = new Date(birthDate);
+
+    // Рассчитываем, сколько лет прошло с даты рождения
+    const yearOffset = Math.floor((startDate.getFullYear() - birthDateObj.getFullYear()) / cycleLength);
+
+    return Array.from({ length: yearsRange }, (_, i) => {
+        const year = birthDateObj.getFullYear() + i;
+        const value = Math.sin((2 * Math.PI * (i + yearOffset)) / cycleLength); // Генерация значений для цикла
+
+        return {
+            year: year,
+            value: value
+        };
     });
 }
 
@@ -206,7 +271,7 @@ function openMacroCycleModal(name, birthDate, gender) {
                 <h5>Макроциклы для: ${name}</h5>
             </div>
             <div class="modal-body">        
-                <p><strong>Дата рождения:</strong> ${formatDate(new Date(birthDate))}<br><strong>Пол:</strong> ${gender}</p>
+                <p><strong>Дата рождения:</strong> ${formatFullDate(new Date(birthDate))}<br><strong>Пол:</strong> ${gender}</p>
                 <ul>${macroModalContent}</ul>
             </div>
         </div>
