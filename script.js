@@ -4,7 +4,6 @@ const cycles = {
     physical: { label: 'Физический', color: '#28a745', description: '23-дневный биоритм.' },
     blood: { label: 'Кровь', color: '#ffc107', description: 'Цикл крови.' },
     fate: { label: 'Судьбы и воли', color: '#17a2b8', description: 'Цикл судьбы.' },
-    jupiter: { label: 'Юпитер', color: '#6f42c1', description: 'Цикл Юпитера.' },
     hormones: { label: 'Гормоны', color: '#e83e8c', description: 'Цикл гормонов (только для женщин).' },
 };
 
@@ -80,15 +79,15 @@ function addPartner() {
     chartContainer.classList.add('chart-container');
 
     const title = document.createElement('h5');
-    title.textContent = name;
+    title.textContent = name + ' (' + gender + ')';
 
     const detailsButton = document.createElement('button');
-    detailsButton.className = 'btn btn-sm btn-info ml-2';
-    detailsButton.textContent = 'Подробнее';
-    detailsButton.onclick = () => openMacroCycleModal(name, birthDate);
+    detailsButton.className = 'btn btn-lg ml-4';
+    detailsButton.innerHTML = '<i class="bi bi-info-circle"></i>';
+    detailsButton.onclick = () => openMacroCycleModal(name, birthDate, gender);
 
     const header = document.createElement('div');
-    header.className = 'd-flex align-items-center mb-2';
+    header.className = 'd-flex justify-content-end align-items-center mb-2';
     header.appendChild(title);
     header.appendChild(detailsButton);
 
@@ -125,7 +124,10 @@ function toggleCycle(checkbox) {
 
 function updateCharts() {
     const activeCycles = Object.keys(cycles).filter(id => document.getElementById(id).checked);
-    Object.entries(charts).forEach(([chartId, { chart, birthDate }]) => {
+    Object.entries(charts).forEach(([chartId, { chart, birthDate, gender }]) => {
+        // Проверка, чтобы не строить график для 'blood', если пол 'male'
+        const filteredCycles = activeCycles.filter(cycleId => !(cycleId === 'blood' && gender === 'male'));
+
         if (activeCycles.includes('fate')) {
             const years = Array.from({ length: FATE_PERIOD_YEARS }, (_, i) => `Год ${i + 1}`);
             const fateSeries = [
@@ -146,7 +148,7 @@ function updateCharts() {
             });
             chart.updateSeries(fateSeries);
         } else {
-            const series = activeCycles.map(cycleId => ({
+            const series = filteredCycles.map(cycleId => ({
                 name: cycles[cycleId].label,
                 data: generateCycleData(cycleId, DAYS_IN_WEEK, birthDate),
                 color: cycles[cycleId].color,
@@ -162,7 +164,7 @@ function updateCharts() {
 
 function generateCycleData(cycleId, days, birthDate) {
     const startDay = new Date(startDate);
-    const cycleLength = { physical: 23, emotional: 28, intellectual: 33, blood: 35, fate: 40, jupiter: 80, hormones: 32 }[cycleId];
+    const cycleLength = { physical: 23, emotional: 28, intellectual: 33, blood: 35, fate: 40, hormones: 32 }[cycleId];
     return Array.from({ length: days }, (_, i) => {
         const dayOffset = Math.floor((new Date(startDay).getTime() - new Date(birthDate).getTime()) / (1000 * 60 * 60 * 24)) + i;
         return Math.sin((2 * Math.PI * dayOffset) / cycleLength);
@@ -178,7 +180,7 @@ function generateFateData(type, years, birthDate) {
     });
 }
 
-function openMacroCycleModal(name, birthDate) {
+function openMacroCycleModal(name, birthDate, gender) {
     const birthDateObj = new Date(birthDate);
     const macroCycles = [
         { name: 'Юпитер', period: 12 },
@@ -204,7 +206,7 @@ function openMacroCycleModal(name, birthDate) {
                 <h5>Макроциклы для: ${name}</h5>
             </div>
             <div class="modal-body">        
-                <p><strong>Дата рождения:</strong> ${formatDate(new Date(birthDate))}</p>
+                <p><strong>Дата рождения:</strong> ${formatDate(new Date(birthDate))}<br><strong>Пол:</strong> ${gender}</p>
                 <ul>${macroModalContent}</ul>
             </div>
         </div>
