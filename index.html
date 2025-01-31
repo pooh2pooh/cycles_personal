@@ -13,9 +13,9 @@
         }
         .cycle-line {
             display: inline-block;
-            width: 10px;
-            height: 4px;
-            margin-left: 5px;
+            width: 18px;
+            height: 5px;
+            margin-left: 2px;
             border-radius: 2px;
         }
         .form-check-label {
@@ -42,6 +42,13 @@
             grid-template-columns: repeat(2, 1fr); /* Два столбца, каждый из которых занимает 50% ширины */
             gap: 4px; /* Отступы между элементами */
         }
+
+        /* Цвет фона при активном чекбоксе */
+        #checkboxContainer .form-check-input:checked {
+            background-color: #4CAF50; /* Зеленый цвет */
+            border-color: #4CAF50; /* Цвет рамки */
+        }
+
 
     </style>
 </head>

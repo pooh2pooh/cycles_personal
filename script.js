@@ -247,35 +247,55 @@ function generateFateData(type, startDate, yearsRange, birthDate) {
 
 function openMacroCycleModal(name, birthDate, gender) {
     const birthDateObj = new Date(birthDate);
+    const today = new Date();
+    
     const macroCycles = [
-        { name: 'Юпитер', period: 12 },
+        { name: 'Юпитер', period: 12, duration: 4 },
+        { name: 'Лунные узлы', period: 9 },
+        { name: 'Северный узел + Южный узел', period: 19 },
         { name: 'Сатурн', period: 29.5 },
-        { name: 'Уран', period: 84 },
-        { name: 'Нептун', period: 165 }
+        { name: 'Макроцикл Солнца', period: 11 }
     ];
-
-    const macroModalContent = macroCycles.map(cycle => {
-        const nextOccurrenceYear = birthDateObj.getFullYear() + Math.ceil((new Date().getFullYear() - birthDateObj.getFullYear()) / cycle.period) * cycle.period;
+    
+    function calculateRemainingTime(nextOccurrenceDate) {
+        const diff = nextOccurrenceDate - today;
+        const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+        const months = Math.floor((diff % (1000 * 60 * 60 * 24 * 365.25)) / (1000 * 60 * 60 * 24 * 30));
+        const days = Math.floor((diff % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24));
+        return `${years} лет, ${months} месяцев, ${days} дней`;
+    }
+    
+    function getNextOccurrences(birthDateObj, cycle) {
+        const nextOccurrenceYear = birthDateObj.getFullYear() + Math.ceil((today.getFullYear() - birthDateObj.getFullYear()) / cycle.period) * cycle.period;
         const nextOccurrenceDate = new Date(birthDateObj);
         nextOccurrenceDate.setFullYear(nextOccurrenceYear);
-        return `
-            <li>
-                <strong>${cycle.name}:</strong> цикл длится ${cycle.period} лет. Следующее наступление: ${formatDate(nextOccurrenceDate)}
-            </li>`;
-    }).join('');
-
-    const modalBody = document.getElementById('macroModalBody');
-    modalBody.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5>Макроциклы для: ${name}</h5>
-            </div>
-            <div class="modal-body">        
-                <p><strong>Дата рождения:</strong> ${formatFullDate(new Date(birthDate))}<br><strong>Пол:</strong> ${gender}</p>
-                <ul>${macroModalContent}</ul>
-            </div>
-        </div>
-    `;
-
+        return { year: nextOccurrenceYear, date: nextOccurrenceDate, remainingTime: calculateRemainingTime(nextOccurrenceDate) };
+    }
+    
+    let modalContent = `<h5 class="text-danger">Макроциклы для: ${name}</h5><p><strong>Дата рождения:</strong> ${formatFullDate(birthDateObj)}<br><strong>Пол:</strong> ${gender}</p><ul>`;
+    
+    macroCycles.forEach(cycle => {
+        const nextOccurrence = getNextOccurrences(birthDateObj, cycle);
+        modalContent += `<li><strong>${cycle.name}:</strong> цикл ${cycle.period} лет. Следующее наступление: ${formatFullDate(nextOccurrence.date)} (${nextOccurrence.remainingTime})</li>`;
+    });
+    modalContent += `</ul>`;
+    
+    if (Object.keys(charts).length > 1) {
+        modalContent += `<h5 class="text-danger">Сравнение с другими партнёрами:</h5><ul>`;
+        Object.entries(charts).forEach(([chartId, partner]) => {
+            if (partner.name !== name) {
+                modalContent += `<li><strong>${partner.name}:</strong><ul>`;
+                macroCycles.forEach(cycle => {
+                    const nextOccurrence = getNextOccurrences(new Date(partner.birthDate), cycle);
+                    modalContent += `<li>${cycle.name}: ${formatFullDate(nextOccurrence.date)} (${nextOccurrence.remainingTime})</li>`;
+                });
+                modalContent += `</ul></li>`;
+            }
+        });
+        modalContent += `</ul>`;
+    }
+    
+    document.getElementById('macroModalBody').innerHTML = `<div class='modal-content'><div class='modal-header'><h5>Макроциклы</h5></div><div class='modal-body'>${modalContent}</div></div>`;
     $('#macroModal').modal('show');
 }
+
