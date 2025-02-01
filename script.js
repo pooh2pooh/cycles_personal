@@ -4,7 +4,7 @@ const cycles = {
     physical: { label: 'Физический', color: '#28a745', description: '23-дневный биоритм.' },
     blood: { label: 'Кровь', color: '#ffc107', description: 'Цикл крови.' },
     fate: { label: 'Судьбы и воли', color: '#17a2b8', description: 'Цикл судьбы.' },
-    hormones: { label: 'Гормоны', color: '#e83e8c', description: 'Цикл гормонов (только для женщин).' },
+    // hormones: { label: 'Гормоны', color: '#e83e8c', description: 'Цикл гормонов (только для женщин).' },
 };
 
 let startDate = new Date();
@@ -23,11 +23,8 @@ const SATURN_PERIOD_DAYS = SATURN_PERIOD_YEARS * DAYS_IN_YEAR;  // 29.5 лет �
 
 let startYear = new Date().getFullYear(); // Начальный год, который будем менять
 
-// События при загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-    generateCheckboxes();
-    updateWeekRange();
-});
+
+
 
 function generateCheckboxes() {
     const container = document.getElementById('checkboxContainer');
@@ -41,6 +38,22 @@ function generateCheckboxes() {
             </div>`;
     });
 }
+
+function toggleAdditionalDateField() {
+    const genderFemale = document.getElementById('genderFemale');
+    const additionalDateField = document.getElementById('additionalDateField');
+
+    console.log('Gender Female checked:', genderFemale.checked);  // Логируем состояние радио-кнопки
+
+    if (genderFemale.checked) {
+        additionalDateField.style.display = 'block'; // Показываем поле
+    } else {
+        additionalDateField.style.display = 'none'; // Скрываем поле
+    }
+}
+
+
+
 
 function formatFullDate(date) {
     const day = date.getDate().toString().padStart(2, '0');  // Добавляем ведущий ноль к дню
@@ -101,10 +114,20 @@ function closeAddModal() {
     $('#addModal').modal('hide');
 }
 
+//
+function renderGender(gender) {
+    if (gender == 'male') {
+        return '🙎‍♂️';
+    } else {
+        return '🙎‍♀️';
+    }
+}
+
 function addPartner() {
     const name = document.getElementById('partnerName').value || `Партнёр ${Object.keys(charts).length + 1}`;
     const birthDate = document.getElementById('birthDate').value;
     const gender = document.querySelector('input[name="gender"]:checked').value;
+    const additionalDate = document.getElementById('additionalDate').value;
     const chartId = `chart-${name.replace(/\s/g, '-')}`;
     const chartsContainer = document.getElementById('chartsContainer');
 
@@ -114,12 +137,12 @@ function addPartner() {
     chartContainer.classList.add('chart-container');
 
     const title = document.createElement('h5');
-    title.textContent = name + ' (' + gender + ')';
+    title.textContent = renderGender(gender) + ' ' + name;
 
     const detailsButton = document.createElement('button');
     detailsButton.className = 'btn btn-lg ml-4';
     detailsButton.innerHTML = '<i class="bi bi-info-circle"></i>';
-    detailsButton.onclick = () => openMacroCycleModal(name, birthDate, gender);
+    detailsButton.onclick = () => openMacroCycleModal(name, birthDate, gender, additionalDate);
 
     const header = document.createElement('div');
     header.className = 'd-flex justify-content-end align-items-center mb-2';
@@ -137,8 +160,11 @@ function addPartner() {
     });
     chart.render();
 
-    charts[chartId] = { chart, name, birthDate, gender };
+    charts[chartId] = { chart, name, birthDate, gender, additionalDate };
     closeAddModal();
+
+    // ✅ Автоматическое сохранение, если чекбокс включён
+    savePartners();
 }
 
 function toggleCycle(checkbox) {
@@ -155,6 +181,7 @@ function toggleCycle(checkbox) {
         }
     }
     updateCharts();
+    updateWeekRange();
 }
 
 function updateCharts() {
@@ -245,8 +272,9 @@ function generateFateData(type, startDate, yearsRange, birthDate) {
     });
 }
 
-function openMacroCycleModal(name, birthDate, gender) {
+function openMacroCycleModal(name, birthDate, gender, additionalDate) {
     const birthDateObj = new Date(birthDate);
+    const additionalDateObj = new Date(additionalDate);
     const today = new Date();
     
     const macroCycles = [
@@ -272,7 +300,43 @@ function openMacroCycleModal(name, birthDate, gender) {
         return { year: nextOccurrenceYear, date: nextOccurrenceDate, remainingTime: calculateRemainingTime(nextOccurrenceDate) };
     }
     
-    let modalContent = `<h5 class="text-danger">Макроциклы для: ${name}</h5><p><strong>Дата рождения:</strong> ${formatFullDate(birthDateObj)}<br><strong>Пол:</strong> ${gender}</p><ul>`;
+
+    let additionalDateText = '';
+    if (!isNaN(additionalDateObj)) {
+        additionalDateText = '<strong>Окончание месячных:</strong> ' + formatFullDate(additionalDateObj);
+
+        // Создаём новый объект Date, чтобы не изменять исходную дату
+        let additionalDateObj2 = new Date(additionalDateObj);
+        additionalDateObj2.setDate(additionalDateObj2.getDate() + 14); // Прибавляем 14 дней
+
+        // Отображаем дату ПМС
+        additionalDateText += '<br><button type="button" class="btn btn-light btn-sm w-100" data-bs-toggle="modal" data-bs-target="#modalFemale1"><strong>Предменструальная фаза (ПМС) — Лютеиновая фаза:</strong> ' + formatFullDate(additionalDateObj2) + '</button>';
+
+        // Создаём новый объект Date, чтобы не изменять исходную дату
+        let additionalDateObj3 = new Date(additionalDateObj);
+        additionalDateObj3.setDate(additionalDateObj3.getDate() - 7);
+        let additionalDateObj4 = new Date(additionalDateObj);
+        additionalDateObj4.setDate(additionalDateObj4.getDate() + 7);
+
+        // Отображаем дату периода Овуляции
+        additionalDateText += '<br><button type="button" class="btn btn-light btn-sm w-100" data-bs-toggle="modal" data-bs-target="#modalFemale2"><strong>Овуляторная фаза:</strong> ' + formatFullDate(additionalDateObj3) + ' — ' + formatFullDate(additionalDateObj4) + '</button>';
+
+        // Создаём новый объект Date, чтобы не изменять исходную дату
+        let additionalDateObj5 = new Date(additionalDateObj);
+        additionalDateObj5.setDate(additionalDateObj5.getDate() + 36);
+
+        // Отображаем дату периода Овуляции
+        additionalDateText += '<br><button type="button" class="btn btn-light btn-sm w-100" data-bs-toggle="modal" data-bs-target="#modalFemale3"><strong>Постменструальная (эстрогенная) фаза — Фолликулярная фаза:</strong> ' + formatFullDate(additionalDateObj5) + '</button>';
+
+        // Создаём новый объект Date, чтобы не изменять исходную дату
+        let additionalDateObj6 = new Date(additionalDateObj);
+        additionalDateObj6.setDate(additionalDateObj6.getDate() + 30);
+
+        // Отображаем дату периода Овуляции
+        additionalDateText += '<br><button type="button" class="btn btn-light btn-sm w-100" data-bs-toggle="modal" data-bs-target="#modalFemale4"><strong>Менструальная фаза:</strong> ' + formatFullDate(additionalDateObj6) + '</button>';
+    }
+
+    let modalContent = `<h5 class="text-danger">Макроциклы для: ${name}</h5><p><strong>Дата рождения:</strong> ${formatFullDate(birthDateObj)}<br><strong>Пол:</strong> ${gender}<br>${additionalDateText}</p><ul>`;
     
     macroCycles.forEach(cycle => {
         const nextOccurrence = getNextOccurrences(birthDateObj, cycle);
@@ -281,10 +345,10 @@ function openMacroCycleModal(name, birthDate, gender) {
     modalContent += `</ul>`;
     
     if (Object.keys(charts).length > 1) {
-        modalContent += `<h5 class="text-danger">Сравнение с другими партнёрами:</h5><ul>`;
+        modalContent += `<h5 class="text-danger pt-4">Сравнение с другими партнёрами:</h5><ul>`;
         Object.entries(charts).forEach(([chartId, partner]) => {
             if (partner.name !== name) {
-                modalContent += `<li><strong>${partner.name}:</strong><ul>`;
+                modalContent += `<li><strong>${partner.name}:</strong> (${partner.gender})<ul>`;
                 macroCycles.forEach(cycle => {
                     const nextOccurrence = getNextOccurrences(new Date(partner.birthDate), cycle);
                     modalContent += `<li>${cycle.name}: ${formatFullDate(nextOccurrence.date)} (${nextOccurrence.remainingTime})</li>`;
@@ -295,7 +359,79 @@ function openMacroCycleModal(name, birthDate, gender) {
         modalContent += `</ul>`;
     }
     
-    document.getElementById('macroModalBody').innerHTML = `<div class='modal-content'><div class='modal-header'><h5>Макроциклы</h5></div><div class='modal-body'>${modalContent}</div></div>`;
+    document.getElementById('macroModalBody').innerHTML = `<div class='modal-content'><div class='modal-header border-0'><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class='modal-body'>${modalContent}</div></div>`;
     $('#macroModal').modal('show');
 }
 
+
+// Функция сохранения партнёров в localStorage
+function savePartners() {
+    const checkbox = document.getElementById('savePartnersCheckbox');
+
+    if (checkbox.checked) {
+        const partnersData = Object.values(charts).map(({ name, birthDate, gender, additionalDate }) => ({
+            name,
+            birthDate,
+            gender,
+            additionalDate
+        }));
+
+        localStorage.setItem('savedPartners', JSON.stringify(partnersData));
+    } else {
+        localStorage.removeItem('savedPartners');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    generateCheckboxes();
+    updateWeekRange();
+
+    const savedPartners = localStorage.getItem('savedPartners');
+    if (savedPartners) {
+        JSON.parse(savedPartners).forEach(({ name, birthDate, gender, additionalDate }) => {
+            addPartnerFromStorage(name, birthDate, gender, additionalDate);
+        });
+
+        // Устанавливаем чекбокс в активное состояние
+        document.getElementById('savePartnersCheckbox').checked = true;
+    }
+
+    // Вызовем toggle сразу при загрузке страницы для установки состояния
+    toggleAdditionalDateField();
+});
+
+function addPartnerFromStorage(name, birthDate, gender, additionalDate) {
+    const chartId = `chart-${name.replace(/\s/g, '-')}`;
+    const chartsContainer = document.getElementById('chartsContainer');
+
+    const chartContainer = document.createElement('div');
+    chartContainer.id = chartId;
+    chartContainer.style.height = '250px';
+    chartContainer.classList.add('chart-container');
+
+    const title = document.createElement('h5');
+    title.textContent = renderGender(gender) + ' ' + name;
+
+    const detailsButton = document.createElement('button');
+    detailsButton.className = 'btn btn-lg ml-4';
+    detailsButton.innerHTML = '<i class="bi bi-info-circle"></i>';
+    detailsButton.onclick = () => openMacroCycleModal(name, birthDate, gender, additionalDate);
+
+    const header = document.createElement('div');
+    header.className = 'd-flex justify-content-end align-items-center mb-2';
+    header.appendChild(title);
+    header.appendChild(detailsButton);
+
+    chartsContainer.appendChild(header);
+    chartsContainer.appendChild(chartContainer);
+
+    const chart = new ApexCharts(chartContainer, {
+        chart: { type: 'line', animations: { enabled: true } },
+        xaxis: { categories: Array.from({ length: 7 }, (_, i) => `День ${i + 1}`) },
+        yaxis: { min: -1, max: 1, decimalsInFloat: 2 },
+        series: [],
+    });
+    chart.render();
+
+    charts[chartId] = { chart, name, birthDate, gender, additionalDate };
+}

@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Циклы Личное</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
         }
         .cycle-line {
             display: inline-block;
@@ -50,20 +51,56 @@
         }
 
 
+        .btn-success {
+            background: linear-gradient(145deg, #333, #666); /* Чёрно-серый градиент */
+            color: white; /* Цвет текста */
+            border: 1px solid #444; /* Тонкая рамка для кнопки */
+            border-radius: 10px; /* Скругление углов */
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2), inset 1px 1px 2px rgba(255, 255, 255, 0.1); /* Эффект выпуклости */
+            transition: all 0.3s ease; /* Плавный переход */
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(145deg, #666, #333); /* Изменение градиента при наведении */
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 4px rgba(255, 255, 255, 0.2); /* Усиление эффекта выпуклости */
+            transform: translateY(-2px); /* Эффект поднятия при наведении */
+        }
+
+        .btn-success:active {
+            background: linear-gradient(145deg, #444, #777); /* Изменение градиента при нажатии */
+            box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2); /* Внутренний эффект при нажатии */
+            transform: translateY(2px); /* Эффект нажатия */
+        }
+
+
+
     </style>
 </head>
 <body>
-    <div class="d-flex justify-content-between align-items-center mb-3" style="background-color:#0e0e0e;color:white;padding:3px;">
-        <button class="btn btn-light" onclick="prevWeek()">&#x2190;</button>
-        <h4 id="weekRange">25.10.23 — 31.10.23</h4>
-        <button class="btn btn-light" onclick="nextWeek()">&#x2192;</button>
-    </div>
+
+    <nav class="navbar sticky-top p-0">
+        <div class="container-fluid p-2" style="background-color:#2c2c2c;color:white;padding:3px;">
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <button class="nav-link btn btn-dark px-3 py-2" onclick="prevWeek()"><i class="bi bi-chevron-compact-left"></i></button>
+                <h4 class="nav-link text-center flex-grow-1" id="weekRange">25.10.23 — 31.10.23</h4>
+                <button class="nav-link btn btn-dark px-3 py-2" onclick="nextWeek()"><i class="bi bi-chevron-compact-right"></i></button>
+            </div>
+        </div>
+    </nav>
+
+
 
     <div class="container mt-4">
         <div class="row">
             <div class="col-12 col-md-4">
                 <div id="checkboxContainer" class="mb-3"></div>
-                <button class="btn btn-primary mb-3" onclick="openAddModal()">Добавить партнёра</button>
+                <button class="btn btn-success mb-3" onclick="openAddModal()"><i class="bi bi-person-plus-fill"></i> Добавить партнёра</button>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="savePartnersCheckbox" onchange="savePartners()">
+                    <label class="form-check-label" for="savePartnersCheckbox">
+                        Запомнить добавленных
+                    </label>
+                </div>
             </div>
 
             <div class="col-12 col-md-8">
@@ -71,53 +108,193 @@
             </div>
         </div>
 
-        <div class="modal" id="macroModal" tabindex="-1" role="dialog">
-            <div class="modal-dialog" id="macroModalBody" role="document"></div>
+        <div class="modal fade" id="macroModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-scrollable" id="macroModalBody" role="document"></div>
         </div>
 
         <!-- Модальное окно добавления партнёра -->
-        <div class="modal" id="addModal" tabindex="-1" role="dialog">
+        <div class="modal fade" id="addModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Добавить партнёра</h5>
-                        <button type="button" class="close" onclick="closeAddModal()">&times;</button>
+                    <div class="modal-header border-0">
+                        <h4 class="modal-title">Добавить партнёра</h4>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <form id="addForm">
-                            <div class="form-group">
-                                <label for="partnerName">Имя</label>
+                            <div class="form-group pt-3 pb-2">
+                                <label class="fw-bold" for="partnerName">Имя <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="partnerName" placeholder="Введите имя">
                             </div>
-                            <div class="form-group">
-                                <label for="birthDate">Дата рождения</label>
+                            <div class="form-group py-2">
+                                <label class="fw-bold" for="birthDate">Дата рождения <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" id="birthDate" required>
                             </div>
-                            <div class="form-group">
-                                <label>Пол</label>
+                            <div class="form-group pt-2 pb-3">
+                                <label class="fw-bold">Пол <span class="text-danger">*</span></label>
                                 <div class="form-check">
-                                    <input type="radio" id="genderMale" name="gender" class="form-check-input" value="male" checked>
+                                    <input type="radio" id="genderMale" name="gender" class="form-check-input" value="male" checked onclick="toggleAdditionalDateField()">
                                     <label class="form-check-label" for="genderMale">Мужской</label>
                                 </div>
                                 <div class="form-check">
-                                    <input type="radio" id="genderFemale" name="gender" class="form-check-input" value="female">
+                                    <input type="radio" id="genderFemale" name="gender" class="form-check-input" value="female" onclick="toggleAdditionalDateField()">
                                     <label class="form-check-label" for="genderFemale">Женский</label>
                                 </div>
                             </div>
+
+                            <!-- Дополнительное поле для даты, которое скрыто по умолчанию -->
+                            <div class="form-group py-2" id="additionalDateField" style="display: none;">
+                                <label class="fw-bold" for="additionalDate">Дата окончания последних месячных<br><span class="fw-normal small text-muted">Нужно для работы с циклом Гормоны</span></label>
+                                <input type="date" class="form-control" id="additionalDate">
+                            </div>
                         </form>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="closeAddModal()">Отмена</button>
-                        <button type="button" class="btn btn-primary" onclick="addPartner()">Добавить</button>
+                    <div class="modal-footer border-0 d-flex justify-content-between">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Отмена</button>
+                        <button type="button" class="btn btn-success" onclick="addPartner()">Добавить</button>
                     </div>
                 </div>
             </div>
         </div>
+
+
+        <!--  -->
+        <div class="modal fade" id="modalFemale4" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-scrollable" role="document">
+                <div class="modal-content">
+                    <div class="modal-header border-0">
+                        <button class="btn btn-link" data-bs-target="#macroModal" data-bs-toggle="modal">← Назад</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h4>Менструальная фаза</h4>
+                        <p><strong>Общее состояние:</strong><br>Во время менструации женщина может испытывать головную боль, спазмы внизу живота, повышенную раздражительность и эмоциональную неустойчивость. С третьего дня самочувствие обычно улучшается, боли становятся менее интенсивными</p>
+                        <p><strong>Интеллект и реакции:</strong><br>В этот период могут нарушаться процессы внимания, снижается чувствительность зрительной, тактильной и других сенсорных систем. Однако к концу фазы когнитивные функции начинают восстанавливаться</p>
+                        <p><strong>Как себя вести мужчине:</strong><br>Кратко:<br>Как Массажист и любящий понимающий мужчина<br>В этот период женщины могут испытывать физический дискомфорт (головную боль, спазмы) и эмоциональную неустойчивость. Важно быть особенно нежным и внимательным. Поддержка и забота будут высоко оценены. Попробуйте предложить помощь по дому или просто провести время вместе, занимаясь чем-то спокойным, например, просмотром фильма или чтением книги.</p>
+                        <p><strong>Что делать:</strong><br>• Предлагайте помощь в бытовых делах.<br>• Уделяйте внимание эмоциональной поддержке.<br>• Избегайте давления и стрессовых ситуаций.</p>
+                        <p><strong>Продолжительность:</strong><br>Менструальная фаза длится 3–5 дней, начиная с первого дня месячных. Это время, когда уровень эстрогена и прогестерона находится на минимальном уровне.</p>
+                        <p><strong>Суммарная тренировочная нагрузка:</strong><br>Средняя. Рекомендуется заниматься йогой, растяжкой или легкими прогулками для поддержания тонуса без перегрузок.</p>
+                        <p><strong>Целесообразно развитие способности:</strong><br>Повышение общей выносливости и развитие гибкости.</p>
+                        <p><strong>Рекомендации по питанию:</strong><br>• Витамин С: брокколи, киви, болгарский перец, паприка, морошка, шпинат<br>• Витамин В12: яйца, говяжья печень, творог<br>• Железо: мясо, птица, печень, бобовые, устрицы<br>• Жиры: холодец, гусиный жир</p>
+                        <p><strong>Травяные добавки/чаи:</strong><br>• Чай Эвалар БИО гинекологические травы (ромашка, тысячелистник, боровая матка)<br>• Травяной сбор с душицей и шиповником для поддержания энергии</p>
+                        <p><strong>Ароматерапия:</strong><br>Масло лаванды или ромашки для успокоения нервной системы и снятия спазмов.</p>
+                        <p><strong>Комплекс упражнений:</strong><br>Йога: поза ребенка , кошка-корова , мягкие скручивания<br>Легкая растяжка для расслабления мышц живота и поясницы</p>
+                        <p><strong>Анализы на гормоны (по показаниям):</strong><br>• ФСГ, ЛГ, пролактин: Оптимально сдавать на 3–5 день цикла 10<br>• Тестостерон общий, 17-ОПН, ДГЭА: При высыпаниях, связанных с менструальным циклом.<br>• ТТГ, Т4св.: По показаниям, если есть подозрения на нарушения щитовидной железы.</p>
+                    </div>
+                    <div class="modal-footer border-0 d-flex justify-content-between">
+                        <h5>Уведомить за</h5>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">3 дня</button>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">1 день</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!--  -->
+        <div class="modal fade" id="modalFemale3" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-scrollable" role="document">
+                <div class="modal-content">
+                    <div class="modal-header border-0">
+                        <button class="btn btn-link" data-bs-target="#macroModal" data-bs-toggle="modal">← Назад</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h4>Постменструальная (эстрогенная) фаза - Фолликулярная фаза</h4>
+                        <p><strong>Общее состояние:</strong><br>После окончания менструации наступает период эмоционального подъема и стабилизации настроения. Колебания массы тела достигают максимума в этой фазе.</p>
+                        <p><strong>Интеллект и реакции:</strong><br>Улучшаются процессы внимания, повышается чувствительность сенсорных систем.</p>
+                        <p><strong>Как себя вести мужчине:</strong><br>Кратко: Партнер<br>Это время, когда уровень энергии и настроения обычно повышается. Женщины становятся более активными и открытыми для новых начинаний. Это отличное время для совместных активностей, таких как прогулки, занятия спортом или планирование будущих проектов. Мужчине стоит быть более инициативным и предлагать новые идеи.
+                        <p><strong>Что делать:</strong><br>• Занимайтесь активными видами деятельности вместе.<br>• Обсуждайте планы и перспективы.<br>• Будьте готовы к тому, что женщина может быть более открытой к новым идеям и экспериментам.</p>
+                        <p><strong>Продолжительность:</strong><br>Фаза длится 7–9 дней, начиная с 6-го дня после начала последних месячных.</p>
+                        <p><strong>Суммарная тренировочная нагрузка:</strong><br>Большая. Подходят силовые тренировки, кардио и активные занятия для повышения выносливости.</p>
+                        <p><strong>Целесообразно развитие способности:</strong><br>Повышение специальной выносливости и скоростных возможностей.</p>
+                        <p><strong>Рекомендации по питанию:</strong><br>• Много белка и цинка, еда, обогащенная йодом: капуста, комбуча, КИМЧИ<br>• Антиоксиданты: ягоды, гранат, шпинат<br>• Фитоэстрогены: семена, бобовые<br>• Железо: печень, почки, крольчатина, шпинат, бобовые<br>
+                        <p><strong>Травяные добавки/чаи:</strong><br>• Зеленый чай с добавлением мяты для повышения энергии<br>• Травяной сбор с шиповником и календулой для поддержания иммунитета</p>
+                        <p><strong>Ароматерапия:</strong><br>Масло бергамота или грейпфрута для повышения настроения и энергии.</p>
+                        <p><strong>Комплекс упражнений:</strong><br>Пилатес: укрепление глубоких мышц тазового дна<br>Кардио: легкий бег, танцы, HIIT для повышения выносливости</p>
+                        <p><strong>Анализы на гормоны (по показаниям):</strong><br>• Эстрадиол: Для оценки уровня гормона в фолликулярной фазе.<br>• АМГ: Для женщин старше 30 лет или с операциями на органах малого таза в анамнезе</p>
+                    </div>
+                    <div class="modal-footer border-0 d-flex justify-content-between">
+                        <h5>Уведомить за</h5>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">3 дня</button>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">1 день</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!--  -->
+        <div class="modal fade" id="modalFemale2" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-scrollable" role="document">
+                <div class="modal-content">
+                    <div class="modal-header border-0">
+                        <button class="btn btn-link" data-bs-target="#macroModal" data-bs-toggle="modal">← Назад</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h4>Овуляторная фаза</h4>
+                        <p><strong>Общее состояние:</strong><br>В этот период повышаются базальные температурные показатели, могут развиваться мигрени, а также возникают слабые боли в зоне живота и поясницы. Работоспособность и либидо достигают своего пика</p>
+                        <p><strong>Интеллект и реакции:</strong><br>Улучшается запоминание благодаря высокому уровню эстрадиола.</p>
+                        <p><strong>Как себя вести мужчине:</strong><br>Кратко: Как разбойник<br>Во время овуляции женщины могут чувствовать себя более привлекательными и уверенно. Это время, когда можно быть немного более настойчивым и экстремальным, если это соответствует вашему стилю общения. Например, можно предложить что-то необычное или приключенческое. Однако важно помнить, что физическое состояние в этот период может быть менее стабильным, поэтому избегайте чрезмерных нагрузок.</p>
+                        <p><strong>Что делать:</strong><br>• Проявляйте больше уверенности и инициативы.<br>• Организуйте романтические свидания или неожиданные сюрпризы.<br>• Учитывайте возможные физические ограничения и избегайте травмоопасных ситуаций.</p>
+                        <p><strong>Продолжительность:</strong><br>Фаза длится 2–4 дня, начиная с 13–15 дня после начала последних месячных.</p>
+                        <p><strong>Суммарная тренировочная нагрузка:</strong><br>Средняя. Не рекомендуется выполнять высокоинтенсивные и сложнокоординационные упражнения из-за повышенного риска травм.</p>
+                        <p><strong>Целесообразно развитие способности:</strong><br>Поддержание энергии и развитие гибкости.</p>
+                        <p><strong>Рекомендации по питанию:</strong><br>• Больше полезных жиров и белковой пищи: миндаль, фисташки, пекан<br>• Магний: семена чиа, сыр<br>• Цинк: устрицы, мясо, печень, рисовые отруби, морковь<br>• Витамин А: тыква, хурма, сливочное масло</p>
+                        <p><strong>Травяные добавки/чаи:</strong><br>• Чай с добавлением мяты и лимона для освежения организма<br>• Травяной сбор с ромашкой и календулой для снижения воспаления</p>
+                        <p><strong>Ароматерапия:</strong><br>Масло розы или иланг-иланг для усиления чувственности и гармонизации эмоций.</p>
+                        <p><strong>Комплекс упражнений:</strong><br>Танцы: активные движения для стимуляции потока энергии<br>Йога: поза воина , приветствие солнцу для поддержания энергии</p>
+                        <p><strong>Анализы на гормоны (по показаниям):</strong><br>• ЛГ: Для подтверждения овуляции.<br>• Прогестерон: На 21–23 день цикла для оценки полноценности лютеиновой фазы</p>
+                    </div>
+                    <div class="modal-footer border-0 d-flex justify-content-between">
+                        <h5>Уведомить за</h5>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">3 дня</button>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">1 день</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!--  -->
+        <div class="modal fade" id="modalFemale1" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-scrollable" role="document">
+                <div class="modal-content">
+                    <div class="modal-header border-0">
+                        <button class="btn btn-link" data-bs-target="#macroModal" data-bs-toggle="modal">← Назад</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h4>Предменструальная фаза (ПМС) - Лютеиновая фаза</h4>
+                        <p><strong>Общее состояние:</strong><br>Если женщина в течение этого месяца не забеременела, то примерно за 5–7 дней до месячных у неё может возникнуть синдром ПМС, при котором снижается работоспособность, проявляются резкие колебания в настроении, присутствует излишнее беспокойство и задержка жидкости.</p>
+                        <p><strong>Интеллект и реакции:</strong><br>В середине или в конце лютеиновой фазы (снижение эстрадиола и увеличение уровня прогестерона) – повышается пространственная память, связанная с познавательным процессом, позволяющая человеку запоминать различные места и пространственные отношения между объектами.</p>
+                        <p><strong>Как себя вести мужчине:</strong><br>Кратко: рыцарь с тонной шоколадок и обнимашек в рюкзаке.<br>Этот период часто ассоциируется с предменструальным синдромом (ПМС), который может вызывать эмоциональные колебания, раздражительность и физический дискомфорт. Важно быть терпеливым и нежным. Поддерживайте женщину словами и действиями, показывайте, что вы рядом и готовы помочь.</p>
+                        <p><strong>Что делать:</strong><br>• Будьте особенно внимательны к эмоциям и потребностям.<br>• Предлагайте помощь и поддержку без лишнего давления.<br>• Избегайте конфликтов и споров, даже если они кажутся мелкими.</p>
+                        <p><strong>Продолжительность:</strong><br>ПМС или Лютеиновая фаза действительно длится 5-8 дней, но её начало и конец зависят от продолжительности менструального цикла. Если цикл составляет 28 дней, то лютеиновая фаза начинается примерно на 15–16 день после окончания последних месячных.</p>
+                        <p><strong>Суммарная тренировочная нагрузка:</strong> Малая, но легкая активность (например, ходьба или йога) помогает снизить симптомы ПМС.</p>
+                        <p><strong>Целесообразно развитие способности:</strong> Развитие гибкости; исключить интенсивные нагрузки силового, скоростного характера и на развитие выносливости.</p>
+                        <p><strong>Рекомендации по питанию:</strong><br>Больше клетчатки, калия и магния, меньше быстрых углеводов и соли:<br> • Омега 3: печень трески, кунжут, оливковое масло, льняное масло, грецкие орехи<br>• Витамин В6: бобовые, чечевица, банан, фундук, авокадо<br>• Магний: сыр, семена чиа, тыквенные семечки<br>• Ограничить кофеин и алкоголь для снижения раздражительности и головных болей.</p>
+                        <p><strong>Травяные добавки/чаи:</strong><br>• Чай с добавлением мелиссы и лаванды для успокоения нервной системы<br>• Травяной сбор с боровой маткой и душицей для регуляции гормонального баланса<br>• Валериана и пустырник для снижения тревожности и улучшения сна.</p>
+                        <p><strong>Ароматерапия:</strong><br>Масло сандала или мандарина для снижения стресса и тревожности.</p>
+                        <p><strong>Комплекс упражнений:</strong><br>Йога: поза голубя, поза бабочки для расслабления тазовых мышц<br>Пилатес: дыхательные техники (пранаяма) для успокоения нервной системы.</p>
+                        <p><strong>Анализы на гормоны (по показаниям):</strong><br>• Прогестерон: На день, рассчитанный как длина цикла минус 7 дней. Например, при цикле 30 дней: 30 - 7 = 23 день<br>• Тестостерон общий, 17-ОПН, ДГЭА: При высыпаниях, связанных с менструальным циклом.<br>• ТТГ, Т4св.: По показаниям, если есть подозрения на нарушения щитовидной железы.</p>
+                    </div>
+                    <div class="modal-footer border-0 d-flex justify-content-between">
+                        <h5>Уведомить за</h5>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">3 дня</button>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">1 день</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
     </div>
 </body>
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script src="script.js"></script>
 </html>
